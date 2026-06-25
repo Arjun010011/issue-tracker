@@ -29,7 +29,7 @@ class updateIssue(BaseModel):
 
 
 class issueOut(BaseModel):
-    id: str
+    id: int
     title: str
     description: str
     priority: issuePriority
