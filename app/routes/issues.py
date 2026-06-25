@@ -25,6 +25,17 @@ async def create_issue(issue: createIssue):
         "status": issueStatus.open,
     }
     with Session(engine) as session:
+        existing_issue = (
+            session.execute(select(issues).where(issues.c.title == issue.title))
+            .mappings()
+            .first()
+        )
+        if existing_issue:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="an issue with the same title already exist",
+            )
+    with Session(engine) as session:
         result = session.execute(insert(issues).values(**new_issues).returning(issues))
         created_issue = result.mappings().first()
         session.commit()
