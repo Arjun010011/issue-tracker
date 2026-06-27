@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 from app.schemas import createIssue, updateIssue, issueOut, issueStatus
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update, insert, delete
-from app.database import engine, issues
+from app.database import engine
+from app.models import issues
 
 router = APIRouter(prefix="/api/v1/routes", tags=["issues"])
 
@@ -17,25 +18,26 @@ async def get_issues():
 
 @router.post("/", response_model=issueOut, status_code=status.HTTP_201_CREATED)
 async def create_issue(issue: createIssue):
-    """create  new issue"""
     new_issues = {
         "title": issue.title,
         "description": issue.description,
         "priority": issue.priority,
         "status": issueStatus.open,
     }
+
     with Session(engine) as session:
         existing_issue = (
             session.execute(select(issues).where(issues.c.title == issue.title))
             .mappings()
             .first()
         )
+
         if existing_issue:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="an issue with the same title already exist",
+                detail="an issue with the same title already exists",
             )
-    with Session(engine) as session:
+
         result = session.execute(insert(issues).values(**new_issues).returning(issues))
         created_issue = result.mappings().first()
         session.commit()
