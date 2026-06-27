@@ -35,3 +35,29 @@ class IssueOut(BaseModel):
     description: str
     priority: IssuePriority
     status: IssueStatus
+
+
+class UserRole(str, Enum):
+    user = "user"
+    admin = "admin"
+
+
+class CreateUser(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=6, max_length=255)
+    role: UserRole = UserRole.user
+
+
+class UpdateUser(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[str] = Field(None, min_length=5, max_length=255)
+    password: Optional[str] = Field(None, min_length=6, max_length=255)
+    role: Optional[UserRole] = None
+
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: UserRole
