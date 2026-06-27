@@ -1,36 +1,37 @@
-from enum import Enum as enum
-from pydantic import BaseModel, Field
+from enum import Enum
 from typing import Optional
 
+from pydantic import BaseModel, Field
 
-class issueStatus(str, enum):
+
+class IssueStatus(str, Enum):
     open = "open"
-    in_progress = "in_progres"
+    in_progress = "in_progress"
     closed = "closed"
 
 
-class issuePriority(str, enum):
+class IssuePriority(str, Enum):
     low = "low"
     medium = "medium"
     high = "high"
 
 
-class createIssue(BaseModel):
+class CreateIssue(BaseModel):
     title: str = Field(min_length=5, max_length=100)
     description: str = Field(min_length=20, max_length=1000)
-    priority: issuePriority = issuePriority.medium
+    priority: IssuePriority = IssuePriority.medium
 
 
-class updateIssue(BaseModel):
+class UpdateIssue(BaseModel):
     title: Optional[str] = Field(None, min_length=5, max_length=100)
     description: Optional[str] = Field(None, min_length=20, max_length=1000)
-    priority: Optional[issuePriority] = None
-    status: Optional[issueStatus] = None
+    priority: Optional[IssuePriority] = None
+    status: Optional[IssueStatus] = None
 
 
-class issueOut(BaseModel):
+class IssueOut(BaseModel):
     id: int
     title: str
     description: str
-    priority: issuePriority
-    status: issueStatus
+    priority: IssuePriority
+    status: IssueStatus

@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, status
-from app.schemas import createIssue, updateIssue, issueOut, issueStatus
+from app.schemas import CreateIssue, IssueOut, IssueStatus, UpdateIssue
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update, insert, delete
 from app.database import engine
 from app.models import issues
 
-router = APIRouter(prefix="/api/v1/routes", tags=["issues"])
+router = APIRouter(prefix="/api/v1/issues", tags=["issues"])
 
 
-@router.get("/", response_model=list[issueOut])
+@router.get("/", response_model=list[IssueOut])
 async def get_issues():
     """retrieve all issues"""
     with Session(engine) as session:
@@ -16,13 +16,13 @@ async def get_issues():
         return result
 
 
-@router.post("/", response_model=issueOut, status_code=status.HTTP_201_CREATED)
-async def create_issue(issue: createIssue):
+@router.post("/", response_model=IssueOut, status_code=status.HTTP_201_CREATED)
+async def create_issue(issue: CreateIssue):
     new_issues = {
         "title": issue.title,
         "description": issue.description,
         "priority": issue.priority,
-        "status": issueStatus.open,
+        "status": IssueStatus.open,
     }
 
     with Session(engine) as session:
@@ -44,7 +44,7 @@ async def create_issue(issue: createIssue):
         return created_issue
 
 
-@router.get("/{issue_id}", response_model=issueOut)
+@router.get("/{issue_id}", response_model=IssueOut)
 def get_issue(issue_id: int):
     with Session(engine) as session:
         result = (
@@ -59,8 +59,8 @@ def get_issue(issue_id: int):
         return result
 
 
-@router.put("/{issue_id}", response_model=issueOut, status_code=status.HTTP_200_OK)
-async def update_issue(issue_id: int, payload: updateIssue):
+@router.put("/{issue_id}", response_model=IssueOut, status_code=status.HTTP_200_OK)
+async def update_issue(issue_id: int, payload: UpdateIssue):
     update_data = payload.model_dump(exclude_unset=True)
     with Session(engine) as session:
         existing_issue = (

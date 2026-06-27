@@ -1,5 +1,5 @@
 from sqlalchemy import Table, Column, Integer, String, Enum
-from app.schemas import issuePriority, issueStatus
+from app.schemas import IssuePriority, IssueStatus
 from app.database import meta
 
 issues = Table(
@@ -14,7 +14,7 @@ issues = Table(
     Column("title", String(100), nullable=False, unique=True),
     Column("description", String(1000), nullable=False),
     Column(
-        "priority", Enum(issuePriority), nullable=False, default=issuePriority.medium
+        "priority", Enum(IssuePriority), nullable=False, default=IssuePriority.medium
     ),
-    Column("status", Enum(issueStatus), nullable=False, default=issueStatus.open),
+    Column("status", Enum(IssueStatus), nullable=False, default=IssueStatus.open),
 )
