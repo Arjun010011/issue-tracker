@@ -1,24 +1,6 @@
-from sqlalchemy import Table, Column, Integer, String, Enum
+from sqlalchemy import Table, Column, Integer, String, Enum, ForeignKey
 from app.schemas import IssuePriority, IssueStatus, UserRole
 from app.database import meta
-
-issues = Table(
-    "issues",
-    meta,
-    Column(
-        "id",
-        Integer,
-        primary_key=True,
-        index=True,
-    ),
-    Column("title", String(100), nullable=False, unique=True),
-    Column("description", String(1000), nullable=False),
-    Column(
-        "priority", Enum(IssuePriority), nullable=False, default=IssuePriority.medium
-    ),
-    Column("status", Enum(IssueStatus), nullable=False, default=IssueStatus.open),
-)
-
 users = Table(
     "users",
     meta,
@@ -33,3 +15,27 @@ users = Table(
     Column("password", String(255), nullable=False),
     Column("role", Enum(UserRole), nullable=False, default=UserRole.user),
 )
+issues = Table(
+    "issues",
+    meta,
+    Column(
+        "id",
+        Integer,
+        primary_key=True,
+        index=True,
+    ),
+    Column("title", String(100), nullable=False, unique=True),
+    Column("description", String(1000), nullable=False),
+    Column(
+        "user_id",
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE",),
+        nullable=False,
+    ),
+    Column(
+        "priority", Enum(IssuePriority), nullable=False, default=IssuePriority.medium
+    ),
+    Column("status", Enum(IssueStatus), nullable=False, default=IssueStatus.open),
+)
+
+

@@ -49,6 +49,11 @@ class CreateUser(BaseModel):
     role: UserRole = UserRole.user
 
 
+class LoginUser(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=6, max_length=255)
+
+
 class UpdateUser(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     email: Optional[str] = Field(None, min_length=5, max_length=255)
@@ -61,3 +66,9 @@ class UserOut(BaseModel):
     name: str
     email: str
     role: UserRole
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut

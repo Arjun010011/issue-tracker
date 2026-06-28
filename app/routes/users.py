@@ -1,43 +1,19 @@
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import insert, select, update
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 import bcrypt
 
+from app.dependencies import get_current_user
 from app.database import engine
 from app.models import users
-from app.schemas import CreateUser, UpdateUser, UserOut
+from app.schemas import UpdateUser, UserOut
 
-router = APIRouter(prefix="/api/v1/auth/register/users", tags=["register user"])
-
-
-@router.post("/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def create_user(user: CreateUser):
-    with Session(engine) as session:
-        existing_user = (
-            session.execute(select(users).where(users.c.email == user.email))
-            .mappings()
-            .first()
-        )
-
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="a user with the same email already exists",
-            )
-
-        hashed_password = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
-        new_user = {
-            "name": user.name,
-            "email": user.email,
-            "password": hashed_password.decode("utf-8"),
-            "role": user.role,
-        }
-
-        result = session.execute(insert(users).values(**new_user).returning(users))
-        created_user = result.mappings().first()
-        session.commit()
-        return created_user
+router = APIRouter(
+    prefix="/api/v1/users",
+    tags=["users"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/{user_id}", response_model=UserOut)
@@ -96,7 +72,7 @@ def update_user(user_id: int, payload: UpdateUser):
                 .mappings()
                 .first()
             )
-
+            # user shouldn't be able to update the email address
             if email_in_use:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,

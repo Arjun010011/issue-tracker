@@ -1,11 +1,16 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas import CreateIssue, IssueOut, IssueStatus, UpdateIssue
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update, insert, delete
 from app.database import engine
 from app.models import issues
+from app.dependencies import get_current_user
 
-router = APIRouter(prefix="/api/v1/issues", tags=["issues"])
+router = APIRouter(
+    prefix="/api/v1/issues",
+    tags=["issues"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.get("/", response_model=list[IssueOut])
@@ -17,12 +22,13 @@ async def get_issues():
 
 
 @router.post("/", response_model=IssueOut, status_code=status.HTTP_201_CREATED)
-async def create_issue(issue: CreateIssue):
+async def create_issue(issue: CreateIssue,user_id:int = Depends(get_current_user)):
     new_issues = {
         "title": issue.title,
         "description": issue.description,
         "priority": issue.priority,
         "status": IssueStatus.open,
+        "user_id":user_id
     }
 
     with Session(engine) as session:
@@ -45,7 +51,7 @@ async def create_issue(issue: CreateIssue):
 
 
 @router.get("/{issue_id}", response_model=IssueOut)
-def get_issue(issue_id: int):
+async def get_issue(issue_id: int):
     with Session(engine) as session:
         result = (
             session.execute(select(issues).where(issues.c.id == issue_id))
