@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 
 import bcrypt
 
-from app.dependencies import get_current_user
-from app.database import engine
+from app.dependencies import get_current_user, get_db
 from app.models import users
 from app.schemas import UpdateUser, UserOut
 
@@ -17,24 +16,23 @@ router = APIRouter(
 
 
 @router.get("/{user_id}", response_model=UserOut)
-def get_user(user_id: int):
-    with Session(engine) as session:
-        result = (
-            session.execute(select(users).where(users.c.id == user_id))
-            .mappings()
-            .first()
+def get_user(user_id: int, session: Session = Depends(get_db)):
+    result = (
+        session.execute(select(users).where(users.c.id == user_id))
+        .mappings()
+        .first()
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
         )
 
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
-            )
-
-        return result
+    return result
 
 
 @router.put("/{user_id}", response_model=UserOut)
-def update_user(user_id: int, payload: UpdateUser):
+def update_user(user_id: int, payload: UpdateUser, session: Session = Depends(get_db)):
     update_data = payload.model_dump(exclude_unset=True)
 
     if not update_data:
@@ -49,42 +47,41 @@ def update_user(user_id: int, payload: UpdateUser):
             bcrypt.gensalt(),
         ).decode("utf-8")
 
-    with Session(engine) as session:
-        existing_user = (
-            session.execute(select(users).where(users.c.id == user_id))
+    existing_user = (
+        session.execute(select(users).where(users.c.id == user_id))
+        .mappings()
+        .first()
+    )
+
+    if not existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
+        )
+
+    if "email" in update_data:
+        email_in_use = (
+            session.execute(
+                select(users).where(
+                    users.c.email == update_data["email"],
+                    users.c.id != user_id,
+                )
+            )
             .mappings()
             .first()
         )
-
-        if not existing_user:
+        # user shouldn't be able to update the email address
+        if email_in_use:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="user not found"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="a user with the same email already exists",
             )
 
-        if "email" in update_data:
-            email_in_use = (
-                session.execute(
-                    select(users).where(
-                        users.c.email == update_data["email"],
-                        users.c.id != user_id,
-                    )
-                )
-                .mappings()
-                .first()
-            )
-            # user shouldn't be able to update the email address
-            if email_in_use:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="a user with the same email already exists",
-                )
+    session.execute(update(users).where(users.c.id == user_id).values(**update_data))
+    session.commit()
 
-        session.execute(update(users).where(users.c.id == user_id).values(**update_data))
-        session.commit()
-
-        updated_user = (
-            session.execute(select(users).where(users.c.id == user_id))
-            .mappings()
-            .first()
-        )
-        return updated_user
+    updated_user = (
+        session.execute(select(users).where(users.c.id == user_id))
+        .mappings()
+        .first()
+    )
+    return updated_user
